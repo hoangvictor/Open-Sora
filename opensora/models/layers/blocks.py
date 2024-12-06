@@ -47,15 +47,16 @@ class LlamaRMSNorm(nn.Module):
 
 
 def get_layernorm(hidden_size: torch.Tensor, eps: float, affine: bool, use_kernel: bool):
-    if use_kernel:
-        try:
-            from apex.normalization import FusedLayerNorm
+    return nn.LayerNorm(hidden_size, eps, elementwise_affine=affine)
+    # if use_kernel:
+    #     try:
+    #         from apex.normalization import FusedLayerNorm
 
-            return FusedLayerNorm(hidden_size, elementwise_affine=affine, eps=eps)
-        except ImportError:
-            raise RuntimeError("FusedLayerNorm not available. Please install apex.")
-    else:
-        return nn.LayerNorm(hidden_size, eps, elementwise_affine=affine)
+    #         return FusedLayerNorm(hidden_size, elementwise_affine=affine, eps=eps)
+    #     except ImportError:
+    #         raise RuntimeError("FusedLayerNorm not available. Please install apex.")
+    # else:
+    #     return nn.LayerNorm(hidden_size, eps, elementwise_affine=affine)
 
 
 def modulate(norm_func, x, shift, scale):
@@ -473,7 +474,7 @@ class MultiHeadCrossAttention(nn.Module):
 
         attn_bias = None
         if mask is not None:
-            attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
+            attn_bias = xformers.ops.fmha.attn_bias.BlockDiagonalMask.from_seqlens([N] * B, mask)
         x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
 
         x = x.view(B, -1, C)

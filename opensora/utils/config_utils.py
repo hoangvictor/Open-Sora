@@ -10,7 +10,7 @@ def parse_args(training=False):
     parser = argparse.ArgumentParser()
 
     # model config
-    parser.add_argument("config", help="model config file path")
+    parser.add_argument("--config", default="/Open-Sora/configs/opensora-v1-2/inference/sample.py", help="model config file path")
 
     # ======================================================
     # General

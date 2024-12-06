@@ -32,7 +32,7 @@ from opensora.utils.inference_utils import (
     split_prompt,
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
-
+from opensora.models.layers.custom_blocks import QuantLinear
 
 def main():
     torch.set_grad_enabled(False)
@@ -103,6 +103,18 @@ def main():
         .to(device, dtype)
         .eval()
     )
+
+    all_modules = dict(model.named_modules())
+    print("Quantizing")
+    for name, module in all_modules.items():
+        if isinstance(module, torch.nn.Linear):
+            parent_module = all_modules['.'.join(name.split('.')[:-1])]
+            quant_linear_layer = QuantLinear(module, name, quant_mode="int8")
+            setattr(
+                parent_module, name.split('.')[-1], quant_linear_layer
+            )
+    print("Finish quant!")
+
     text_encoder.y_embedder = model.y_embedder  # HACK: for classifier-free guidance
 
     # == build scheduler ==
@@ -119,6 +131,8 @@ def main():
             prompts = load_prompts(cfg.prompt_path, start_idx, cfg.get("end_index", None))
         else:
             prompts = [cfg.get("prompt_generator", "")] * 1_000_000  # endless loop
+
+    prompts = ["A man is running in the beach"]
 
     # == prepare reference ==
     reference_path = cfg.get("reference_path", [""] * len(prompts))
