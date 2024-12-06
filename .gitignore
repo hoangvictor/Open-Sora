@@ -200,6 +200,7 @@ tools/caption/pllava_dir/PLLaVA/
 
 # vbench
 vbench
+VBench
 !eval/vbench
 vbench2_beta_i2v
 
